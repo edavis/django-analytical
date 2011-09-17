@@ -2,12 +2,15 @@
 Tests for the analytical.utils module.
 """
 
+import re
+
 from django.http import HttpRequest
 from django.template import Context
 from django.conf import settings
 
 from analytical.utils import (
-    is_internal_ip, get_required_setting, AnalyticalException)
+    is_internal_ip, get_required_setting,
+    AnalyticalMissingSetting, AnalyticalIncorrectFormat)
 from analytical.tests.utils import (
     TestCase, override_settings, SETTING_DELETED)
 
@@ -29,18 +32,18 @@ class SettingDeletedTestCase(TestCase):
 
         self.assertEqual(settings.USER_ID, 1)
 
-    @override_settings(USER_ID=SETTING_DELETED)
     def test_get_required_setting(self):
         """
-        Make sure using get_required_setting fails in the right place.
+        Make sure using get_required_setting fails with the right
+        exception.
         """
-        # only available in python >= 2.7
-        if hasattr(self, 'assertRaisesRegexp'):
-            with self.assertRaisesRegexp(AnalyticalException, "^USER_ID setting: not found$"):
-                user_id = get_required_setting("USER_ID", "\d+", "invalid USER_ID")
-        else:
-            self.assertRaises(AnalyticalException,
-                              get_required_setting, "USER_ID", "\d+", "invalid USER_ID")
+        with override_settings(USER_ID=SETTING_DELETED):
+            self.assertRaises(AnalyticalMissingSetting,
+                              get_required_setting, "USER_ID", re.compile("\d+"), "invalid USER_ID")
+
+        with override_settings(USER_ID="abc"):
+            self.assertRaises(AnalyticalIncorrectFormat,
+                              get_required_setting, "USER_ID", re.compile("\d+"), "invalid USER_ID")
 
 class InternalIpTestCase(TestCase):
 

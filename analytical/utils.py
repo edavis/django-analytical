@@ -19,10 +19,10 @@ def get_required_setting(setting, value_re, invalid_msg):
     try:
         value = getattr(settings, setting)
     except AttributeError:
-        raise AnalyticalException("%s setting: not found" % setting)
+        raise AnalyticalMissingSetting("%s setting: not found" % setting)
     value = str(value)
     if not value_re.search(value):
-        raise AnalyticalException("%s setting: %s: '%s'"
+        raise AnalyticalIncorrectFormat("%s setting: %s: '%s'"
                 % (setting, invalid_msg, value))
     return value
 
@@ -122,3 +122,6 @@ class AnalyticalException(Exception):
     be silenced in templates.
     """
     silent_variable_failure = True
+
+class AnalyticalMissingSetting(AnalyticalException): pass
+class AnalyticalIncorrectFormat(AnalyticalException): pass
